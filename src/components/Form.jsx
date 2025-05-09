@@ -1,74 +1,80 @@
-import React, { useRef } from "react";
-import { useState } from "react";
-
+import { useRef, useState } from "react";
+import { RiImageAddLine } from "react-icons/ri";
+import { FaFile } from "react-icons/fa";
+import {useNavigate} from "react-router-dom";
 const Form = () => {
+  const [file, setFile] = useState(null);
   const [jd, setJd] = useState("");
-  const [file, setFile] = useState([]);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async(e) => {
     e.preventDefault();
+    console.log(file,jd)
+    const formData = new FormData();
+
+    formData.append("resume",file);
+    formData.append("jobDescription",jd.trim());
+
+
     try{
-        const readResume = await fetch("http://localhost:8000/read", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                jd,
-                file,
-            }),
-        })
-        const response = readResume.text();
-        console.log(response);
+      const response = await fetch("http://localhost:8000/read", {
+        method: "POST",
+        body:formData
+     });
+     if(!response.ok){
+      throw new Error("Network response was not ok")
+     }
+     const result = await response.json();
+     console.log(result);
+     navigate("/analyze",{state:{result}});
     }catch(err){
-      console.log(err);
+    alert("Error submitting resume",err);
     }
   };
   return (
     <div>
-      <form 
+      <form
         onSubmit={handleSubmit}
-        className="flex flex-col items-center space-y-2"
+        className="flex flex-col items-center justify-center"
       >
-        <div className="flex ">
-          <div className="flex">
+        {/* Input section for Resume */}
+        <div >
+          <div className="flex gap-x-4">
             <input
               type="file"
+              accept="image/*,application/pdf"
               onChange={(e) => setFile(e.target.files[0])}
-              ref={fileInputRef}
               className="hidden"
+              ref={fileInputRef}
             />
-            <div
-              onClick={() => fileInputRef.current.click()}
-              className="cursor-pointer bg-blue-500 text-white p-3 rounded-lg text-center hover:bg-blue-600 transition flex items-center justify-center gap-2"
-            >
-              <svg
-                className="w  w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                ></path>
-              </svg>
+            <div className="cursor-pointer bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2" onClick={() => fileInputRef.current.click()}>
+              {file ? (
+                <FaFile
+                  size={30}
+                />
+              ) : (
+                <RiImageAddLine
+                  size={30}
+                  onClick={() => fileInputRef.current.click()}
+                />
+              )}
+
               <span>{file ? file.name : "Choose a file"}</span>
             </div>
+
+            {/* Textarea section for job description */}
+            <textarea
+              value={jd}
+              onChange={(e) => setJd(e.target.value)}
+              className="border p-2 rounded-lg w-full min-h-[40px] max-h-[200px] resize-y overflow-y-auto"
+              placeholder="Enter job description..."
+            />
           </div>
-
-          <input
-            type="text"
-            value={jd}
-            onChange={(e) => setJd(e.target.value)}
-          />
         </div>
-
-        <button type="submit">Submit</button>
+        <button type ="submit">
+          Submit
+        </button>
       </form>
     </div>
   );
